@@ -75,9 +75,15 @@ int mian()
 
 #endif 
 
+    fd_set tempReadSet;
+    bzero((void *)&tempReadSet, sizeof(tempReadSet));
+
     while (1)
     {
-        ret = select(maxfd + 1, &readSet, NULL, NULL, NULL);
+        /* 备份读集合 */
+        tempReadSet = readSet;
+
+        ret = select(maxfd + 1, &tempReadSet, NULL, NULL, NULL);
         if (ret == -1)
         {
             perror("select error");
@@ -85,7 +91,7 @@ int mian()
         }
 
         /* 如果sockfd 在readSet集合里面 */
-        if (FD_ISSET(sockfd, &readSet));
+        if (FD_ISSET(sockfd, &tempReadSet));
         {
             int acceptfd = accept(sockfd, NULL, NULL);
             if (acceptfd == -1)
@@ -98,13 +104,12 @@ int mian()
 
             /* 更新maxfd,文件描述符可能空出来 */
             maxfd = maxfd < acceptfd ? acceptfd : maxfd;
-
         }
 
         /* 程序到这个地方说明也许有通信 */
         for (int idx = 0; idx <= maxfd; idx++)
         {
-            if (idx != sockfd && FD_ISSET(idx, &readSet))
+            if (idx != sockfd && FD_ISSET(idx, &tempReadSet))
             {
                 /* 程序到这里说明一定有通信(已经建立连接过的) */
                 char buffer[BUFFER_SIZE];
